@@ -74,11 +74,10 @@ function shell() {
         a.jam.localeCompare(b.jam),
     );
   $("#app").innerHTML =
-    `<aside id="side"><div class="logo" style="justify-content:flex-start;padding:1rem .6rem 0;font-size:1.3rem"><img src="assets/logo-unindra.png" alt="">LMS UNINDRA</div>
-<div class="me">${av(U.nama, 44, U.foto)}<div style="min-width:0"><b style="color:var(--hd)">${U.nama}</b><div class="mu"><span class="dot ${U.online ? "" : "off"}"></span>${U.online ? "Online" : "Offline"}</div></div></div>
+    `<aside id="side"><div class="me">${av(U.nama, 44, U.foto)}<div style="min-width:0"><b style="color:var(--hd)">${U.nama}</b><div class="mu"><span class="dot ${U.online ? "" : "off"}"></span>${U.online ? "Online" : "Offline"}</div></div></div>
 <div class="sec">Menu Mahasiswa</div><div class="mi" data-r="dashboard">${ic("home")}Dashboard</div><div class="mi" data-r="presensi">${ic("cal")}Presensi</div><div class="mi" data-r="pesan">${ic("bell")}Notifikasi</div>
 <div class="sec">Kelas</div><div style="padding:0 .3rem .5rem">${semSel("ss2")}</div><div id="cls">${sideCls()}</div></aside>
-<div id="main"><header id="nav"><button class="ib hb" id="hb" aria-label="Menu">${ic("menu")}</button><b style="color:var(--hd);font-size:1.1rem">LMS UNINDRA</b>
+<div id="main"><header id="nav"><button class="ib hb" id="hb" aria-label="Buka menu" aria-expanded="false">${ic("menu")}</button><div class="logo nav-brand"><img src="assets/logo-unindra.png" alt="">LMS UNINDRA</div>
 <div class="row hide-s" style="margin-left:1rem;flex:1;color:var(--mu)">${ic("search")}<input class="inp" style="border:0;max-width:300px;background:transparent" placeholder="Cari mata kuliah, materi…" id="q"></div><span class="sp"></span>
 <button class="ib" id="th" aria-label="Tema">${ic("moon")}</button><button class="ib" id="hp" aria-label="Bantuan">${ic("help")}</button>
 <div class="dd" id="d2"><button class="ib" aria-label="Notifikasi">${ic("bell")}<i id="nb">${unr()}</i></button><div class="menu" id="nm">${msgMenu()}</div></div>
@@ -96,7 +95,19 @@ function shell() {
         if (!o) d.classList.add("open");
       }),
   );
-  $("#hb").onclick = () => $("#side").classList.toggle("on");
+  const side = $("#side");
+  const menuButton = $("#hb");
+  side.classList.toggle("closed", matchMedia("(max-width: 1000px)").matches);
+  const syncMenuState = () => {
+    const isOpen = !side.classList.contains("closed");
+    menuButton.setAttribute("aria-expanded", String(isOpen));
+    menuButton.setAttribute("aria-label", isOpen ? "Tutup menu" : "Buka menu");
+  };
+  syncMenuState();
+  menuButton.onclick = () => {
+    side.classList.toggle("closed");
+    syncMenuState();
+  };
   $("#th").onclick = () => {
     const r = document.documentElement,
       d =
@@ -130,7 +141,11 @@ document.addEventListener("click", (e) => {
   if (r) {
     document.querySelectorAll(".dd").forEach((x) => x.classList.remove("open"));
     go(r.dataset.r);
-    $("#side")?.classList.remove("on");
+    if (matchMedia("(max-width: 1000px)").matches) {
+      $("#side")?.classList.add("closed");
+      $("#hb")?.setAttribute("aria-expanded", "false");
+      $("#hb")?.setAttribute("aria-label", "Buka menu");
+    }
   }
   const m = e.target.closest("[data-m]");
   if (m) {
