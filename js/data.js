@@ -405,6 +405,7 @@ let sem = "Ganjil 2026/2027",
   done = {},
   sel = 0,
   msgOpen = 0;
+const attendanceRecords = {};
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
   cur = () =>
     SEM[sem].c
@@ -417,9 +418,12 @@ const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
   all = () => Object.values(SEM).flatMap((s) => s.c),
   find = (id) => all().find((c) => c.id == id);
 const att = (c) => {
-  const w = SEM[Object.keys(SEM).find((k) => SEM[k].c.includes(c))].week;
-  return Array.from({ length: 16 }, (_, i) =>
-    i >= w
+  const semester = Object.keys(SEM).find((k) => SEM[k].c.includes(c)),
+    w = SEM[semester].week;
+  return Array.from({ length: 16 }, (_, i) => {
+    const recordKey = `${U.nim}|${semester}|${c.id}|${i + 1}`;
+    if (attendanceRecords[recordKey]) return attendanceRecords[recordKey];
+    return i >= w
       ? "x"
       : c.abs !== undefined
         ? [3, 5, 1, 6, 2, 7, 4, 0, 9, 11, 13, 8, 10, 12, 14, 15]
@@ -429,9 +433,15 @@ const att = (c) => {
           : "H"
         : (i * 7 + c.id * 3) % 17 == 0 || (i * 5 + c.id) % 13 == 0
           ? "T"
-          : "H",
-  );
+          : "H";
+  });
 };
+function recordAttendance(c, meeting) {
+  const semester = Object.keys(SEM).find((k) => SEM[k].c.includes(c)),
+    recordKey = `${U.nim}|${semester}|${c.id}|${meeting}`;
+  attendanceRecords[recordKey] = "H";
+  return true;
+}
 const pct = (a) => {
   const n = a.filter((x) => x != "x");
   return Math.round((n.filter((x) => x == "H").length / n.length) * 100);

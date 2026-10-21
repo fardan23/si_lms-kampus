@@ -340,10 +340,6 @@ const MN = [
 const fmtD = (d) =>
   `${d.getDate()} ${MN[d.getMonth()]} ${d.getFullYear()}, ${p2(d.getHours())}:${p2(d.getMinutes())}`;
 const smOf = (c) => Object.keys(SEM).find((q) => SEM[q].c.includes(c));
-const pastDone = (c, w) => {
-  const S = SEM[smOf(c)];
-  return !S.aktif || w < S.week - 1;
-};
 function tw(c, w) {
   const sm = smOf(c),
     b = BASE[sm],
@@ -378,11 +374,16 @@ function twS(c, w, S) {
   if (S == "open") return [d(-2 - (w % 3)), d(3 + (w % 4))];
   return tw(c, w);
 }
-const KST1 = ["done", "closed"];
+const KST1 = ["done", "closed"],
+  ACTIVE_KST1 = ["closed", "done", "open"];
 function kt(c, w, key) {
   if (done[key]) return "done";
   const n = w / 4;
-  return n == 1 ? KST1[c.id % 2] : "open";
+  return n == 1
+    ? smOf(c) == "Ganjil 2026/2027"
+      ? ACTIVE_KST1[c.id % ACTIVE_KST1.length]
+      : KST1[c.id % KST1.length]
+    : "open";
 }
 function ktW(c, w, S) {
   const d = (n) =>

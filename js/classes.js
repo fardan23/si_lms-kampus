@@ -88,7 +88,7 @@ ${Array.from({ length: 16 }, (_, i) => i + 1)
                           ? "done"
                           : "open"
                         : ty == "materi"
-                          ? done[key] || pastDone(c, w)
+                          ? att(c)[w - 1] == "H"
                             ? "done"
                             : "open"
                           : "open";
@@ -515,7 +515,7 @@ function showItem(cid, w, k) {
   let b = "",
     f = "";
   if (ty == "materi") {
-    const dn = !!done[key] || pastDone(c, w);
+    const dn = att(c)[w - 1] == "H";
     b =
       kv([["Dosen", c.dosen]]) +
       (isV
@@ -535,11 +535,11 @@ function showItem(cid, w, k) {
       ) +
       H(
         "Berkas",
-        `<div class="row" style="padding:.6rem .8rem;border:1px solid var(--bd);border-radius:.4rem"><span class="ic b-pr">${ic(it[1])}</span><div style="min-width:0"><b style="color:var(--hd);overflow-wrap:anywhere">Pertemuan_${w}_${t.replace(/\s+/g, "_").replace(/[^\w]/g, "")}${isV ? ".mp4" : ".pdf"}</b><div class="mu">${isV ? "MP4 · 18 mnt · 96 MB" : "PDF · 2,4 MB"}</div></div><span class="sp"></span><button class="btn s o" onclick="toast('Simulasi: berkas belum tersedia di versi demo')">${isV ? "Putar" : "Unduh"}</button></div>`,
+        `<div class="row" style="padding:.6rem .8rem;border:1px solid var(--bd);border-radius:.4rem"><span class="ic b-pr">${ic(it[1])}</span><div style="min-width:0"><b style="color:var(--hd);overflow-wrap:anywhere">Pertemuan_${w}_${t.replace(/\s+/g, "_").replace(/[^\w]/g, "")}${isV ? ".mp4" : ".txt"}</b><div class="mu">${isV ? "MP4 · 18 mnt · 96 MB" : "TXT · materi demo"}</div></div><span class="sp"></span><button class="btn s o" ${isV ? `onclick="toast('Video belum tersedia di versi demo')"` : `onclick="downloadMaterial(${cid},${w},${k})"`}>${isV ? "Putar" : "Unduh"}</button></div>`,
       );
     f = dn
-      ? okb("Sudah dipelajari")
-      : `<button class="btn" onclick="fin('${key}',${cid},${w},${k},'Materi ditandai selesai')">Tandai selesai dipelajari</button>`;
+      ? '<span class="btn material-status">Sudah dipelajari</span>'
+      : `<button class="btn" onclick="markMaterialStudied(${cid},${w},${k})">Tandai selesai dipelajari</button>`;
   } else if (ty == "tugas") {
     const exam = it[4],
       n = w / 2,
@@ -654,7 +654,7 @@ function showItem(cid, w, k) {
             "Hasil kuis",
             sb?.answers
               ? `Nilai: <b style="color:var(--hd)">${sb.skor}</b> (${sb.correct}/${sb.total} benar) · Durasi pengerjaan ${quizDurationText(sb.durationSeconds)}${sb.expired ? " · Waktu habis" : ""}`
-              : "Kuis ini tercatat selesai sebelumnya. Rincian nilai belum tersedia.",
+              : `Nilai simulasi: <b style="color:var(--hd)">${76 + ((cid * 13 + w * 7) % 23)}/100</b>. Rincian jawaban kuis ini tidak tersedia.`,
           ) +
           (sb?.answers
             ? H(
@@ -732,6 +732,63 @@ function showItem(cid, w, k) {
     `<div class="card" style="max-width:660px;width:100%;max-height:88vh;overflow:auto"><div class="row" style="align-items:flex-start"><span class="ic ${TY[ty][1]}">${ic(it[1])}</span><div style="min-width:0"><span class="badge ${TY[ty][1]}">${isV ? "Materi video" : TY[ty][0]}</span><h4 style="margin-top:.3rem">${it[2]}</h4><div class="mu">${c.nama} · Pertemuan ${w}</div></div><span class="sp"></span><button class="ib" onclick="closeM()" aria-label="Tutup">✕</button></div>${b}<div class="row" style="margin-top:1.3rem;justify-content:flex-end;flex-wrap:wrap"><button class="btn o" onclick="closeM()">Tutup</button>${f}</div></div>`,
   );
   if (ty == "kuis" && run) $("#modal").dataset.quizKey = key;
+}
+function downloadMaterial(cid, w, k) {
+  const c = find(cid),
+    it = c && itemsOf(w, c)[k];
+  if (!it || it[0] != "materi" || it[1] != "file")
+    return toast("Berkas materi tidak ditemukan.");
+  const topic = tp(c, w),
+    filename = `Pertemuan_${w}_${topic.replace(/\s+/g, "_").replace(/[^\w]/g, "")}.txt`,
+    content = [
+      "Materi Pembelajaran (Demo LMS UNINDRA)",
+      `Mata kuliah: ${c.nama}`,
+      `Pertemuan: ${w} - ${topic}`,
+      `Dosen: ${c.dosen}`,
+      "",
+      `Materi ini membahas ${topic} pada pertemuan ${w}.`,
+      "",
+      "Capaian pembelajaran:",
+      `- Memahami konsep ${topic}.`,
+      "- Menerapkan konsep pada contoh kasus sederhana.",
+      "- Menyiapkan pertanyaan untuk sesi diskusi kelas.",
+    ].join("\n");
+  try {
+    const url = URL.createObjectURL(
+        new Blob([content], { type: "text/plain;charset=utf-8" }),
+      ),
+      link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    console.error("Materi tidak dapat diunduh.", error);
+    return toast("Unduhan materi gagal. Silakan coba lagi.");
+  }
+  if (!recordAttendance(c, w))
+    return toast("Materi diunduh, tetapi presensi gagal disimpan.");
+  done[`${cid}-${w}-${k}`] = 1;
+  reshow(cid, w, k, `Materi diunduh. Presensi pertemuan ${w} tercatat hadir.`);
+}
+function markMaterialStudied(cid, w, k) {
+  const c = find(cid),
+    it = c && itemsOf(w, c)[k];
+  if (!it || it[0] != "materi")
+    return toast("Materi tidak ditemukan.");
+  if (w > SEM[smOf(c)].week)
+    return toast("Materi pertemuan ini belum dibuka.");
+  if (!recordAttendance(c, w))
+    return toast("Presensi gagal disimpan. Silakan coba lagi.");
+  done[`${cid}-${w}-${k}`] = 1;
+  reshow(
+    cid,
+    w,
+    k,
+    `Materi selesai dipelajari. Presensi pertemuan ${w} tercatat hadir.`,
+  );
 }
 function reshow(cid, w, k, msg) {
   const cd = $("#modal .card"),
