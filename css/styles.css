@@ -337,7 +337,7 @@ label {
   position: fixed;
   inset: 0 auto 0 0;
   width: 260px;
-  background: #fff;
+  background: var(--card);
   box-shadow: var(--sh);
   overflow-y: auto;
   z-index: 30;
@@ -360,7 +360,7 @@ label {
   position: sticky;
   top: 0.75rem;
   margin: 0.75rem 1.5rem 0;
-  background: #fff;
+  background: var(--card);
   border-radius: 0.5rem;
   box-shadow: var(--sh);
   padding: 0.55rem 1rem;
